@@ -14,11 +14,7 @@ interface Props {
   onToggleChat: () => void;
 }
 
-export default function RoomHeader({
-  code, isHost, participantCount,
-  micMuted, camOff, onToggleMic, onToggleCam,
-  onLeave, chatOpen, onToggleChat,
-}: Props) {
+export default function RoomHeader({ code, isHost, participantCount, micMuted, camOff, onToggleMic, onToggleCam, onLeave, chatOpen, onToggleChat }: Props) {
   const [copied, setCopied] = useState(false);
 
   const copy = () => {
@@ -30,57 +26,54 @@ export default function RoomHeader({
 
   return (
     <header style={S.bar}>
-      {/* Left: brand */}
       <div style={S.left}>
-        <span style={{ fontSize: 20 }}>🎬</span>
+        <span style={{ fontSize: 18 }}>🎬</span>
         <span style={S.brand}>ANTP</span>
-        {isHost && <span style={S.hostBadge}>Host</span>}
+        {isHost && <span style={S.badge}>Host</span>}
       </div>
 
-      {/* Center: room code pill */}
-      <button style={S.codePill} onClick={copy} title="Click to copy code">
+      <button style={S.codePill} onClick={copy} title="Click to copy">
         <span style={S.codeLabel}>Room:</span>
         <span style={S.codeVal}>{code}</span>
-        <span style={{ fontSize: 12, color: copied ? 'var(--green)' : 'var(--text2)' }}>{copied ? '✓' : '⧉'}</span>
+        <span style={{ fontSize: 11, color: copied ? 'var(--green)' : 'var(--text2)', marginLeft: 2 }}>
+          {copied ? '✓' : '⧉'}
+        </span>
       </button>
 
-      {/* Right: controls */}
       <div style={S.controls}>
-        <span style={{ color: 'var(--text2)', fontSize: 13 }}>👥 {participantCount}</span>
-        <IconBtn active={!micMuted} onClick={onToggleMic} icon={micMuted ? '🔇' : '🎤'} title={micMuted ? 'Unmute' : 'Mute'} />
-        <IconBtn active={!camOff}  onClick={onToggleCam} icon={camOff  ? '🚫' : '📹'} title={camOff  ? 'Enable cam' : 'Disable cam'} />
-        <IconBtn active={chatOpen} onClick={onToggleChat} icon="💬" title="Toggle chat" />
-        <button style={S.leaveBtn} onClick={onLeave}>Leave</button>
+        <span style={S.count}>👥 {participantCount}</span>
+        <Btn active={!micMuted} onClick={onToggleMic} label={micMuted ? '🔇' : '🎤'} title={micMuted ? 'Unmute' : 'Mute'} />
+        <Btn active={!camOff}  onClick={onToggleCam}  label={camOff  ? '🚫' : '📹'} title={camOff ? 'Enable cam' : 'Cam off'} />
+        <Btn active={chatOpen} onClick={onToggleChat}  label="💬"                    title="Toggle chat" />
+        <button style={S.leave} onClick={onLeave}>Leave</button>
       </div>
     </header>
   );
 }
 
-function IconBtn({ active, onClick, icon, title }: { active: boolean; onClick: () => void; icon: string; title: string }) {
+function Btn({ active, onClick, label, title }: { active: boolean; onClick: () => void; label: string; title: string }) {
   return (
     <button
+      onClick={onClick} title={title}
       style={{
         ...S.iconBtn,
-        background: active ? 'var(--bg3)' : 'rgba(239,68,68,0.15)',
-        border: `1px solid ${active ? 'var(--border)' : 'rgba(239,68,68,0.35)'}`,
+        background: active ? 'var(--bg3)' : 'rgba(239,68,68,0.18)',
+        border: `1px solid ${active ? 'var(--border)' : 'rgba(239,68,68,0.4)'}`,
       }}
-      onClick={onClick}
-      title={title}
-    >
-      {icon}
-    </button>
+    >{label}</button>
   );
 }
 
 const S: Record<string, React.CSSProperties> = {
-  bar: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 16px', background: 'var(--bg2)', borderBottom: '1px solid var(--border)', gap: 12, flexShrink: 0, zIndex: 10, flexWrap: 'wrap' },
-  left: { display: 'flex', alignItems: 'center', gap: 8 },
-  brand: { fontWeight: 800, fontSize: 17, letterSpacing: 1, background: 'linear-gradient(90deg,#fff,#c4b5fd)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' },
-  hostBadge: { background: 'rgba(124,58,237,0.25)', color: '#c4b5fd', border: '1px solid rgba(124,58,237,0.45)', borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 700 },
-  codePill: { display: 'flex', alignItems: 'center', gap: 7, background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 20, padding: '6px 14px', cursor: 'pointer', color: 'var(--text)', fontSize: 14, transition: 'border-color 0.2s' },
-  codeLabel: { color: 'var(--text2)', fontSize: 12 },
-  codeVal: { fontWeight: 800, letterSpacing: '0.14em', fontSize: 15, color: '#c4b5fd' },
-  controls: { display: 'flex', alignItems: 'center', gap: 8 },
-  iconBtn: { width: 36, height: 36, borderRadius: '50%', fontSize: 15, cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center' },
-  leaveBtn: { background: 'rgba(239,68,68,0.12)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.35)', borderRadius: 8, padding: '6px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer' },
+  bar:      { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--bg2)', borderBottom: '1px solid var(--border)', gap: 8, flexShrink: 0, flexWrap: 'wrap' },
+  left:     { display: 'flex', alignItems: 'center', gap: 6 },
+  brand:    { fontWeight: 800, fontSize: 16, letterSpacing: 1.5, background: 'linear-gradient(90deg,#fff,#c4b5fd)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' },
+  badge:    { background: 'rgba(124,58,237,0.25)', color: '#c4b5fd', border: '1px solid rgba(124,58,237,0.4)', borderRadius: 20, padding: '1px 8px', fontSize: 10, fontWeight: 700 },
+  codePill: { display: 'flex', alignItems: 'center', gap: 5, background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 20, padding: '5px 12px', cursor: 'pointer', color: 'var(--text)', fontSize: 13 },
+  codeLabel:{ color: 'var(--text2)', fontSize: 11 },
+  codeVal:  { fontWeight: 800, letterSpacing: '0.14em', fontSize: 14, color: '#c4b5fd' },
+  controls: { display: 'flex', alignItems: 'center', gap: 6 },
+  count:    { color: 'var(--text2)', fontSize: 12, marginRight: 2 },
+  iconBtn:  { width: 34, height: 34, borderRadius: '50%', fontSize: 14, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.15s', flexShrink: 0 },
+  leave:    { background: 'rgba(239,68,68,0.12)', color: '#fca5a5', border: '1px solid rgba(239,68,68,0.35)', borderRadius: 8, padding: '5px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer', flexShrink: 0 },
 };

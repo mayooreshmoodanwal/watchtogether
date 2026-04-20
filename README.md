@@ -135,4 +135,3 @@ Browser A ↔ Browser B  (WebRTC P2P video/audio)
            ↕ ICE negotiation via STUN/TURN
          Socket.io Server (signalling + chat)
 ```
-# watchtogether

@@ -13,28 +13,27 @@ interface Props {
 
 export default function VideoGrid({ localStream, remoteStreams, participants, mySocketId, micMuted, camOff }: Props) {
   const others = participants.filter((p) => p.socketId !== mySocketId);
-  const total = 1 + others.length;
-  const cols = total <= 1 ? 1 : total <= 4 ? 2 : 3;
   const myInfo = participants.find((p) => p.socketId === mySocketId);
 
   return (
-    <div style={{ ...S.grid, gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
-      <VideoTile
-        key="local"
+    <div style={S.strip}>
+      {/* Local tile */}
+      <Tile
         stream={localStream}
-        name={myInfo ? `${myInfo.name} (You)` : 'You'}
+        label={myInfo?.name ? `${myInfo.name} (You)` : 'You'}
         muted={true}
-        showMicMuted={micMuted}
+        micMuted={micMuted}
         camOff={camOff}
         isLocal={true}
       />
+      {/* Remote tiles */}
       {others.map((p) => (
-        <VideoTile
+        <Tile
           key={p.socketId}
           stream={remoteStreams[p.socketId] || null}
-          name={p.name}
+          label={p.name}
           muted={false}
-          showMicMuted={false}
+          micMuted={false}
           camOff={false}
           isLocal={false}
         />
@@ -43,16 +42,14 @@ export default function VideoGrid({ localStream, remoteStreams, participants, my
   );
 }
 
-interface TileProps {
+function Tile({ stream, label, muted, micMuted, camOff, isLocal }: {
   stream: MediaStream | null;
-  name: string;
+  label: string;
   muted: boolean;
-  showMicMuted: boolean;
+  micMuted: boolean;
   camOff: boolean;
   isLocal: boolean;
-}
-
-function VideoTile({ stream, name, muted, showMicMuted, camOff, isLocal }: TileProps) {
+}) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -60,43 +57,144 @@ function VideoTile({ stream, name, muted, showMicMuted, camOff, isLocal }: TileP
     if (!el) return;
     if (stream) {
       el.srcObject = stream;
+      el.play().catch(() => {});
     } else {
       el.srcObject = null;
     }
   }, [stream]);
 
-  const hasVideo = !!stream && stream.getVideoTracks().some((t) => t.enabled) && !camOff;
-  const initials = name.replace(' (You)', '').split(' ').map((w: string) => w[0] || '').join('').slice(0, 2).toUpperCase() || '?';
+  const hasVideo = !!stream &&
+    stream.getVideoTracks().length > 0 &&
+    stream.getVideoTracks().some((t) => t.enabled) &&
+    !(isLocal && camOff);
+
+  const initials = label
+    .replace(' (You)', '')
+    .split(' ')
+    .map((w) => w[0] || '')
+    .join('')
+    .slice(0, 2)
+    .toUpperCase() || '?';
+
+  const shortLabel = label.length > 12 ? label.slice(0, 10) + '…' : label;
 
   return (
-    <div style={{ ...S.tile, border: isLocal ? '2px solid var(--accent)' : '1px solid var(--border)' }}>
-      <video
-        ref={videoRef}
-        autoPlay
-        playsInline
-        muted={muted}
-        style={{ ...S.video, display: hasVideo ? 'block' : 'none', transform: isLocal ? 'scaleX(-1)' : 'none' }}
-      />
-      {!hasVideo && (
-        <div style={S.avatar}>
-          <span style={S.initials}>{initials}</span>
-        </div>
-      )}
-      <div style={S.nameBar}>
-        {showMicMuted && <span style={{ fontSize: 11 }}>🔇</span>}
-        {!stream && !isLocal && <span style={{ fontSize: 11 }}>📡</span>}
-        <span style={S.nameText}>{name}</span>
+    <div style={S.tileWrap}>
+      <div style={{
+        ...S.circle,
+        border: isLocal ? '2.5px solid var(--accent)' : '2px solid var(--border2)',
+        boxShadow: isLocal ? '0 0 0 3px rgba(124,58,237,0.25)' : 'none',
+      }}>
+        {/* Video element always present */}
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted={muted}
+          style={{
+            ...S.video,
+            display: hasVideo ? 'block' : 'none',
+            transform: isLocal ? 'scaleX(-1)' : 'none',
+          }}
+        />
+        {/* Avatar fallback */}
+        {!hasVideo && (
+          <div style={S.avatar}>
+            <span style={S.initials}>{initials}</span>
+          </div>
+        )}
+        {/* Mic muted overlay */}
+        {micMuted && (
+          <div style={S.muteBadge}>🔇</div>
+        )}
+        {/* Connecting indicator for remote with no stream yet */}
+        {!isLocal && !stream && (
+          <div style={S.connecting}>📡</div>
+        )}
       </div>
+      <span style={S.label}>{shortLabel}</span>
     </div>
   );
 }
 
+const SIZE = 88;
+
 const S: Record<string, React.CSSProperties> = {
-  grid: { display: 'grid', gap: 4, padding: '4px 8px 8px', background: 'var(--bg)', height: 200, overflow: 'hidden', flexShrink: 0 },
-  tile: { position: 'relative', borderRadius: 8, overflow: 'hidden', background: 'var(--bg2)', display: 'flex', alignItems: 'center', justifyContent: 'center' },
-  video: { width: '100%', height: '100%', objectFit: 'cover' },
-  avatar: { width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg,#2d1b69,#1a1a2e)' },
-  initials: { fontSize: 26, fontWeight: 700, color: '#c4b5fd' },
-  nameBar: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: '3px 8px', background: 'rgba(0,0,0,0.65)', display: 'flex', alignItems: 'center', gap: 4 },
-  nameText: { color: '#fff', fontSize: 11, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 },
+  strip: {
+    display: 'flex',
+    flexDirection: 'row',
+    gap: 12,
+    padding: '8px 12px',
+    overflowX: 'auto',
+    overflowY: 'hidden',
+    background: 'var(--bg)',
+    flexShrink: 0,
+    alignItems: 'center',
+    minHeight: SIZE + 36,
+  },
+  tileWrap: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: 5,
+    flexShrink: 0,
+  },
+  circle: {
+    width: SIZE,
+    height: SIZE,
+    borderRadius: '50%',
+    overflow: 'hidden',
+    background: 'linear-gradient(135deg,#1e1040,#0a0a14)',
+    position: 'relative',
+    flexShrink: 0,
+  },
+  video: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+  },
+  avatar: {
+    width: '100%',
+    height: '100%',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: 'linear-gradient(135deg,#2d1b69,#1a1a2e)',
+  },
+  initials: {
+    fontSize: 26,
+    fontWeight: 700,
+    color: '#c4b5fd',
+  },
+  muteBadge: {
+    position: 'absolute',
+    bottom: 4,
+    right: 4,
+    fontSize: 13,
+    background: 'rgba(0,0,0,0.7)',
+    borderRadius: '50%',
+    width: 22,
+    height: 22,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  connecting: {
+    position: 'absolute',
+    inset: 0,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: 22,
+    background: 'rgba(0,0,0,0.5)',
+  },
+  label: {
+    fontSize: 11,
+    color: 'var(--text2)',
+    maxWidth: SIZE,
+    textAlign: 'center',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
 };
